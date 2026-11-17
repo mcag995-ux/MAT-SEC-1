@@ -1,1 +1,292 @@
+```html
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Oca de los Números Enteros - Mina Subterránea</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0c0a09;
+            background-image:
+                radial-gradient(circle at 20% 20%, rgba(120, 53, 15, 0.25) 0%, transparent 45%),
+                radial-gradient(circle at 80% 80%, rgba(6, 78, 59, 0.25) 0%, transparent 45%),
+                repeating-linear-gradient(45deg, rgba(28, 25, 23, 0.4) 0px, rgba(28, 25, 23, 0.4) 12px, rgba(12, 10, 9, 0.6) 12px, rgba(12, 10, 9, 0.6) 24px);
+            color: #f5f5f4;
+        }
+        .title-font { font-family: 'Fredoka', sans-serif; }
+        @keyframes torchFlicker {
+            0%, 100% { transform: scale(1) rotate(-2deg); opacity: 0.95; }
+            50% { transform: scale(1.12) rotate(3deg); opacity: 1; }
+        }
+        .torch-flame { animation: torchFlicker 1.2s infinite ease-in-out; display: inline-block; }
+        @keyframes diceShake {
+            0% { transform: rotate(0deg) scale(1); }
+            25% { transform: rotate(-16deg) scale(1.08); }
+            50% { transform: rotate(14deg) scale(1.1); }
+            75% { transform: rotate(-10deg) scale(1.06); }
+            100% { transform: rotate(0deg) scale(1); }
+        }
+        .dice-rolling { animation: diceShake 0.45s ease-in-out; }
+        @keyframes popIn {
+            0% { transform: scale(0.82); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .animate-pop { animation: popIn 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        @keyframes pulseBadge {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.12); }
+        }
+        .special-icon-anim { animation: pulseBadge 1.8s infinite ease-in-out; }
+        @media print {
+            body * { visibility: hidden; }
+            #certificate-card, #certificate-card * { visibility: visible; }
+            #certificate-card { position: fixed; left: 0; top: 0; width: 100%; border: 3px solid #b45309; }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between p-2 sm:p-4">
 
+    <!-- Encabezado de la Mina Subterránea -->
+    <header class="max-w-6xl w-full mx-auto bg-stone-900/90 border-2 border-amber-700/60 rounded-2xl p-3 sm:p-4 shadow-2xl mb-3">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+            <div class="flex items-center gap-2 sm:gap-3">
+                <span class="text-2xl sm:text-3xl torch-flame">🔥</span>
+                <div>
+                    <h1 class="title-font text-xl sm:text-3xl font-bold text-amber-400 tracking-wide">
+                        ⛏️ Oca de los Números Enteros
+                    </h1>
+                    <p class="text-xs text-stone-300">Expedición Subterránea · Opera y ubica en la recta numérica</p>
+                </div>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-2 text-xs sm:text-sm font-bold">
+                <span class="bg-stone-800 border border-amber-500/40 px-3 py-1.5 rounded-xl text-amber-300">
+                    📍 Posición: <strong id="current-pos-badge" class="text-white text-base">0</strong>
+                </span>
+                <span class="bg-emerald-950/80 border border-emerald-500/40 px-3 py-1.5 rounded-xl text-emerald-300">
+                    ✅ Aciertos: <strong id="stat-hits">0</strong>
+                </span>
+                <span class="bg-rose-950/80 border border-rose-500/40 px-3 py-1.5 rounded-xl text-rose-300">
+                    ❌ Errores: <strong id="stat-errors">0</strong>
+                </span>
+                <button id="mute-btn" onclick="toggleMute()" class="bg-stone-800 hover:bg-stone-700 border border-stone-600 px-3 py-1.5 rounded-xl text-stone-200 cursor-pointer transition">
+                    🔊 Sonido ON
+                </button>
+                <button onclick="resetGame()" class="bg-amber-700 hover:bg-amber-600 px-3 py-1.5 rounded-xl text-white cursor-pointer transition">
+                    🔄 Reiniciar
+                </button>
+            </div>
+        </div>
+
+        <!-- Leyenda de Casillas Especiales -->
+        <div class="mt-3 pt-2 border-t border-stone-800 flex flex-wrap items-center justify-center gap-2 sm:gap-3 text-[11px] sm:text-xs font-semibold">
+            <span class="bg-emerald-900/60 text-emerald-200 px-2.5 py-1 rounded-lg border border-emerald-600/40">🛒 +3, +9: Vagoneta (+2)</span>
+            <span class="bg-cyan-900/60 text-cyan-200 px-2.5 py-1 rounded-lg border border-cyan-600/40">🧪 +5, -3: Curandero</span>
+            <span class="bg-amber-900/60 text-amber-200 px-2.5 py-1 rounded-lg border border-amber-600/40">🗡️ -7, +11: Asaltante</span>
+            <span class="bg-indigo-900/60 text-indigo-200 px-2.5 py-1 rounded-lg border border-indigo-600/40">🎯 -2, +8: Colócate en Recta</span>
+            <span class="bg-purple-900/60 text-purple-200 px-2.5 py-1 rounded-lg border border-purple-600/40">🧠 +4, -12: Operación Combinada</span>
+            <span class="bg-rose-900/60 text-rose-200 px-2.5 py-1 rounded-lg border border-rose-600/40">🪨 +7, +13 / 🔥 -10: Peligro (Salvación en Recta)</span>
+        </div>
+    </header>
+
+    <!-- Contenedor Principal -->
+    <main class="max-w-6xl w-full mx-auto flex-1 flex flex-col gap-3">
+
+        <!-- Recta Numérica Subterránea (ARRIBA) -->
+        <section class="bg-stone-900/95 border-2 border-amber-800/70 rounded-2xl p-3 shadow-xl">
+            <div class="flex items-center justify-between mb-1.5">
+                <span class="text-xs font-bold uppercase tracking-wider text-amber-400">📏 Recta Numérica Subterránea (-16 a +16)</span>
+                <span class="text-[11px] text-stone-400">⬅️ Negativos (Dragón) · <strong class="text-amber-300">0</strong> · Positivos (Diamantes) ➡️</span>
+            </div>
+            <div class="overflow-x-auto pb-1">
+                <div id="number-line-track" class="grid grid-cols-[repeat(33,minmax(26px,1fr))] gap-1 min-w-[780px] items-center">
+                    <!-- Generado dinámicamente por JS -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Galería Subterránea: Tablero + Panel de Control -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-3 items-start">
+
+            <!-- Tablero Serpiente (8 columnas en desktop) -->
+            <section class="lg:col-span-8 bg-stone-900/95 border-4 border-amber-900/80 rounded-3xl p-3 sm:p-4 shadow-2xl relative overflow-hidden">
+                <!-- Vigas superiores -->
+                <div class="flex justify-between items-center text-xs text-amber-500/80 font-bold mb-2 px-1">
+                    <span>🔥 GALERÍA PROFUNDA</span>
+                    <span>NIVEL SUBTERRÁNEO</span>
+                    <span>🔥 VETA DE DIAMANTES</span>
+                </div>
+
+                <!-- Overlay de Carita Grande sobre el Tablero -->
+                <div id="board-feedback-overlay" class="hidden absolute inset-0 bg-stone-950/75 backdrop-blur-xs z-30 items-center justify-center p-4">
+                    <div id="board-feedback-card" class="rounded-3xl p-6 sm:p-8 text-center max-w-sm w-full border-4 shadow-2xl animate-pop">
+                        <div id="feedback-face" class="text-7xl sm:text-8xl mb-2">😃</div>
+                        <h3 id="feedback-title" class="title-font text-3xl sm:text-4xl font-extrabold tracking-wide mb-2">¡CORRECTO!</h3>
+                        <p id="feedback-subtitle" class="text-sm sm:text-base font-semibold"></p>
+                    </div>
+                </div>
+
+                <!-- Grid del tablero serpiente (11 columnas x 5 filas) -->
+                <div id="snake-board" class="grid grid-cols-11 gap-1.5 sm:gap-2">
+                    <!-- Generado dinámicamente por JS -->
+                </div>
+            </section>
+
+            <!-- Panel de Control y Dados (4 columnas en desktop) -->
+            <aside class="lg:col-span-4 bg-stone-900/95 border-2 border-stone-700 rounded-3xl p-4 shadow-2xl flex flex-col gap-3">
+                <div class="text-center">
+                    <span class="inline-block bg-amber-500/20 text-amber-300 text-xs font-bold px-3 py-1 rounded-full border border-amber-500/40">
+                        Ronda <span id="round-counter">1</span>
+                    </span>
+                    <h2 class="title-font text-xl font-bold text-white mt-1">Lanzamiento de Dados</h2>
+                    <p class="text-xs text-stone-400">Verde suma (+) · Rojo resta (-)</p>
+                </div>
+
+                <!-- Zona de Dados con Orden Aleatorio -->
+                <div id="dice-container" class="flex items-center justify-center gap-4 py-3 bg-stone-950/80 rounded-2xl border border-stone-800">
+                    <!-- Dado 1 -->
+                    <div id="dice-slot-1" class="flex flex-col items-center">
+                        <div id="die-box-1" class="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-emerald-600 border-4 border-emerald-300 shadow-lg grid grid-cols-3 grid-rows-3 p-2 gap-1 items-center justify-items-center">
+                            <span class="text-white font-black text-2xl col-span-3 row-span-3">?</span>
+                        </div>
+                        <span id="die-label-1" class="text-xs font-extrabold text-emerald-400 mt-1.5">VERDE (+)</span>
+                    </div>
+
+                    <span id="dice-separator" class="text-2xl font-black text-stone-500">•</span>
+
+                    <!-- Dado 2 -->
+                    <div id="dice-slot-2" class="flex flex-col items-center">
+                        <div id="die-box-2" class="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-rose-600 border-4 border-rose-300 shadow-lg grid grid-cols-3 grid-rows-3 p-2 gap-1 items-center justify-items-center">
+                            <span class="text-white font-black text-2xl col-span-3 row-span-3">?</span>
+                        </div>
+                        <span id="die-label-2" class="text-xs font-extrabold text-rose-400 mt-1.5">ROJO (-)</span>
+                    </div>
+                </div>
+
+                <!-- Botón de Lanzar Ambos Dados -->
+                <button id="roll-btn" onclick="rollBothDice()" class="w-full py-3.5 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white font-extrabold text-base sm:text-lg rounded-2xl shadow-lg border-b-4 border-amber-900 active:translate-y-0.5 cursor-pointer transition">
+                    🎲 Lanzar Ambos Dados
+                </button>
+
+                <!-- Zona de Operación y Respuesta Obligatoria -->
+                <div id="answer-panel" class="bg-stone-800/90 border border-stone-600 rounded-2xl p-3.5 opacity-60 pointer-events-none transition">
+                    <label for="player-answer" class="block text-xs font-bold text-amber-300 uppercase tracking-wide mb-1">
+                        Calcula tu nueva posición:
+                    </label>
+                    <div id="equation-prompt" class="text-center font-mono text-base sm:text-lg font-extrabold text-white bg-stone-950 py-2 px-3 rounded-xl border border-stone-700 mb-2.5">
+                        Lanza los dados para iniciar
+                    </div>
+                    <div class="flex gap-2">
+                        <input type="number" id="player-answer" placeholder="Ej. -3 o 4" class="w-full text-center text-xl font-black py-2 px-3 bg-white text-slate-900 border-2 border-amber-500 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-400">
+                        <button id="check-btn" onclick="checkAnswer()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold rounded-xl shadow cursor-pointer transition">
+                            Comprobar
+                        </button>
+                    </div>
+                    <button type="button" onclick="toggleHint()" class="mt-2 text-xs text-amber-300 hover:text-amber-200 underline cursor-pointer">
+                        💡 Ver pista paso a paso
+                    </button>
+                    <div id="hint-box" class="hidden mt-2 text-xs bg-stone-950 text-stone-200 p-2.5 rounded-xl border border-amber-700/50"></div>
+                </div>
+            </aside>
+        </div>
+    </main>
+
+    <!-- Modal de Encuentros (Curandero / Asaltante) -->
+    <div id="encounter-modal" class="fixed inset-0 bg-slate-900/85 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 text-center shadow-2xl border-4 border-cyan-500 animate-pop">
+            <span id="encounter-icon" class="text-6xl mb-2 block">🧪</span>
+            <h3 id="encounter-title" class="title-font text-2xl font-bold text-slate-800 mb-1">¡Encuentro en la Mina!</h3>
+            <p id="encounter-story" class="text-sm text-slate-700 font-medium mb-4 bg-slate-100 p-3.5 rounded-2xl border border-slate-200"></p>
+            <div class="mb-4">
+                <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Escribe tu respuesta numérica:</label>
+                <input type="number" id="encounter-input" placeholder="Escribe el número..." class="w-full text-center text-2xl font-black py-2.5 px-3 bg-white text-slate-900 border-2 border-cyan-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-cyan-400">
+            </div>
+            <button onclick="resolveEncounter()" class="w-full py-3 bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-lg rounded-xl shadow cursor-pointer transition">
+                Responder al Encuentro
+            </button>
+        </div>
+    </div>
+
+    <!-- Modal de Reto de Salvación en la Recta Numérica (para Casillas con Penalización) -->
+    <div id="rescue-modal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 text-center shadow-2xl border-4 border-rose-500 animate-pop">
+            <span id="rescue-icon" class="text-6xl mb-2 block">🛡️</span>
+            <h3 id="rescue-title" class="title-font text-2xl font-bold text-slate-800 mb-1">¡Reto de Salvación!</h3>
+            <p id="rescue-desc" class="text-xs sm:text-sm text-slate-600 mb-4">
+                Caíste en una zona de peligro. Ubica correctamente en la recta numérica para evitar el castigo.
+            </p>
+            <div id="rescue-challenge-box" class="bg-slate-50 p-4 rounded-2xl border border-slate-200 mb-5">
+                <!-- Contenido dinámico del reto de recta -->
+            </div>
+            <div id="rescue-options" class="grid grid-cols-2 gap-3">
+                <!-- Botones de opción -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Reto: Colócate en la Recta Numérica -->
+    <div id="place-rect-modal" class="fixed inset-0 bg-slate-900/85 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 text-center shadow-2xl border-4 border-emerald-500 animate-pop">
+            <span class="text-5xl mb-2 block">🎯</span>
+            <h3 class="title-font text-2xl font-bold text-slate-800 mb-1">¡Desafío: Colócate en la Recta!</h3>
+            <p id="place-rect-instruction" class="text-xs sm:text-sm text-slate-600 mb-4">
+                Haz clic en la casilla exacta de la recta numérica que representa el número indicado.
+            </p>
+            <div class="bg-amber-50 p-4 rounded-2xl border-2 border-amber-300 mb-4">
+                <span class="text-xs font-bold text-amber-900 uppercase tracking-wide">Busca la posición:</span>
+                <div id="target-number-badge" class="text-3xl font-black text-amber-700 my-1">-7</div>
+            </div>
+            <!-- Mini recta interactiva para clics -->
+            <div class="bg-slate-900 p-4 rounded-2xl border border-slate-700 mb-3 overflow-x-auto">
+                <div id="interactive-rect-track" class="grid grid-cols-[repeat(33,minmax(24px,1fr))] gap-1 items-end pt-3 pb-1 min-w-[700px]">
+                    <!-- Generado por JS -->
+                </div>
+            </div>
+            <p class="text-[11px] text-slate-500">Haz clic sobre la marca de la recta numérica correspondiente.</p>
+        </div>
+    </div>
+
+    <!-- Modal de Reto de Operaciones Combinadas -->
+    <div id="combo-modal" class="fixed inset-0 bg-slate-900/85 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 text-center shadow-2xl border-4 border-indigo-500 animate-pop">
+            <span class="text-5xl mb-2 block">🧠</span>
+            <h3 class="title-font text-2xl font-bold text-slate-800 mb-1">¡Desafío de Operaciones Combinadas!</h3>
+            <p class="text-xs sm:text-sm text-slate-600 mb-4">
+                Resuelve paso a paso respetando los signos y paréntesis para ganar un impulso extra.
+            </p>
+            <div class="bg-indigo-50 p-4 rounded-2xl border-2 border-indigo-300 mb-4">
+                <span class="text-xs font-bold text-indigo-900 uppercase tracking-wide">Calcula el resultado:</span>
+                <div id="combo-expression" class="text-2xl sm:text-3xl font-black text-indigo-800 my-2 font-mono">(-4) + (+7) - (-2)</div>
+                <input type="number" id="combo-input" placeholder="Resultado..." class="w-full text-center text-2xl font-bold py-2 px-3 bg-white text-slate-900 border-2 border-indigo-500 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-400">
+            </div>
+            <button onclick="resolveComboChallenge()" class="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-lg rounded-xl shadow cursor-pointer transition">
+                Comprobar Operación
+            </button>
+        </div>
+    </div>
+
+    <!-- Modal de Fin de Juego y Certificado Final -->
+    <div id="end-modal" class="fixed inset-0 bg-slate-950/85 backdrop-blur-sm hidden items-center justify-center p-4 z-50 overflow-y-auto">
+        <div class="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 text-center shadow-2xl border-4 border-amber-400 animate-pop my-auto">
+            <span id="end-emoji" class="text-6xl mb-2 block">💎</span>
+            <h2 id="end-title" class="title-font text-2xl sm:text-3xl font-bold text-slate-800 mb-1">¡Llegaste a los Diamantes!</h2>
+            <p id="end-message" class="text-slate-600 text-xs sm:text-sm mb-4">Has completado la expedición subterránea de los números enteros.</p>
+
+            <!-- Sección de Certificado Académico -->
+            <div id="certificate-card" class="bg-gradient-to-br from-amber-50 via-yellow-50 to-amber-100 p-5 rounded-2xl border-2 border-amber-500 shadow-inner mb-4 text-left relative">
+                <div class="flex items-center justify-between border-b border-amber-300 pb-2 mb-3">
+                    <div>
+                        <span class="text-[10px] font-black uppercase tracking-widest text-amber-800 block">Certificado de Exploración Matemática</span>
+                        <h4 class="title-font text-lg font-bold text-slate-900">Oca de los Números Enteros</h4>
+                    </div>
+                    <span class="text-3xl">🏅</span>
+                </div>
+
+                <div class="mb-3">
+                    <label class="block text-[11px] font-bold text-slate-700 mb-1">Nombre del Estudiante:</label>
+                    <input type="text" id="student-name-input" placeholder="Escribe tu nombre completo..." class="w-full px-3 py-1.5 text-sm font-bold bg-white text-slate-900 border border-amber-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500">
+        
